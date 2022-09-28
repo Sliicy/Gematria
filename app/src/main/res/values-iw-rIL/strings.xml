@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Gematria Pasuk Finder</string>
+    <string name="search_or_enter_a_value">לכתוב מילים או מספר</string>
+    <string name="mispar_gadol">מספר גדול (ך = 500)</string>
+</resources>
