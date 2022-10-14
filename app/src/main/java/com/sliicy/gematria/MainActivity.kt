@@ -1,15 +1,19 @@
 package com.sliicy.gematria
 
-import android.content.*
+import android.app.AlertDialog
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.LocaleList
 import android.text.Editable
 import android.text.TextWatcher
-import android.view.View
+import android.text.util.Linkify
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
@@ -18,9 +22,9 @@ import androidx.recyclerview.widget.RecyclerView
 import java.io.BufferedReader
 import java.util.*
 
-
 class MainActivity : AppCompatActivity() {
     private lateinit var editTextSearch: EditText
+    private lateinit var gematriaResult: TextView
     private lateinit var recyclerView: RecyclerView
     private lateinit var misparSwitch: SwitchCompat
     private val data = ArrayList<PasukModel>()
@@ -33,6 +37,28 @@ class MainActivity : AppCompatActivity() {
         editTextSearch = findViewById(R.id.editTextSearch)
         recyclerView = findViewById(R.id.recyclerView)
         misparSwitch = findViewById(R.id.misparSwitch)
+        gematriaResult = findViewById(R.id.gematriaValue)
+
+        val firstRun = getSharedPreferences("PREFERENCE", MODE_PRIVATE).getBoolean("firstRun", true)
+        if (firstRun) {
+
+            // Show alert:
+            val alertBuilder = AlertDialog.Builder(this)
+            alertBuilder.setTitle(R.string.privacy_policy)
+            alertBuilder.setCancelable(false)
+            alertBuilder.setPositiveButton("OK") { dialog, id ->
+
+                // Save the state if user acknowledges privacy policy:
+                getSharedPreferences("PREFERENCE", MODE_PRIVATE)
+                    .edit()
+                    .putBoolean("firstRun", false)
+                    .apply()
+            }
+            alertBuilder.setMessage(R.string.dialog_message)
+            val alert: AlertDialog = alertBuilder.create()
+            alert.show()
+            Linkify.addLinks((alert.findViewById(android.R.id.message) as TextView), Linkify.ALL)
+        }
 
         // Handle keyboard input:
         editTextSearch.addTextChangedListener(object : TextWatcher {
@@ -67,7 +93,7 @@ class MainActivity : AppCompatActivity() {
         recyclerView.setOnLongClickListener { true }
 
         adapter.onItemLongClick = {
-            val clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clipboardManager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
             val clipData = ClipData.newPlainText("text", it.text)
             clipboardManager.setPrimaryClip(clipData)
             Toast.makeText(this, "Copied to clipboard!", Toast.LENGTH_SHORT).show()
@@ -105,6 +131,20 @@ class MainActivity : AppCompatActivity() {
             data.add(PasukModel(word))
         }
         recyclerView.adapter = adapter
+        if (editTextSearch.text.matches(Regex("^\\d+$"))) {
+            gematriaResult.text = buildString {
+                append("= ")
+                append(editTextSearch.text.toString().toLong())
+            }
+        } else {
+            gematriaResult.text = buildString {
+                append("= ")
+                append(getGematria(editTextSearch.text.toString(), misparSwitch.isChecked))
+            }
+        }
+        if (gematriaResult.text == "= 0") {
+            gematriaResult.text = ""
+        }
     }
 
     private fun searchGematria(input: String): List<String> {

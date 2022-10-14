@@ -3,4 +3,6 @@
     <string name="app_name">Gematria Pasuk Finder</string>
     <string name="search_or_enter_a_value">לכתוב מילים או מספר</string>
     <string name="mispar_gadol">מספר גדול (ך = 500)</string>
+    <string name="dialog_message">אפליקציה זו אינה אוספת או מאחסנת מידע אישי כלל.\\n\\nקישור למדיניות הפרטיות:\\n https://raw.githubusercontent.com/Sliicy/Gematria/master/privacy-policy.md</string>
+    <string name="privacy_policy">מדיניות פרטיות</string>
 </resources>
