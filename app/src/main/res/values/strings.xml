@@ -1,7 +1,9 @@
 <resources>
     <string name="app_name">Gematria Pasuk Finder</string>
     <string name="search_or_enter_a_value">Enter a Hebrew phrase or a number</string>
-    <string name="mispar_gadol">Mispar Gadol (ך = 500)</string>
+    <string name="mispar_gadol">Mispar Gadol</string>
     <string name="dialog_message">This app does not collect or store any personal information at all.\n\nPrivacy Policy Link:\nhttps://raw.githubusercontent.com/Sliicy/Gematria/master/privacy-policy.md</string>
     <string name="privacy_policy">Privacy Policy</string>
+    <string name="show_words">Show single words</string>
+    <string name="show_davening">Show Davening</string>
 </resources>

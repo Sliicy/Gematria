@@ -10,46 +10,39 @@
         android:id="@+id/editTextSearch"
         android:layout_width="match_parent"
         android:layout_height="50dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
         android:ems="10"
         android:hint="@string/search_or_enter_a_value"
         android:imeOptions="actionSearch"
-        android:inputType="textPersonName"
+        android:importantForAutofill="no"
+        android:inputType="textAutoCorrect|textPersonName|textAutoComplete"
         android:selectAllOnFocus="true"
         android:singleLine="true"
         android:text=""
-        android:layout_marginStart="20dp"
-        android:layout_marginEnd="20dp"
+        android:textColorHint="#757575"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
-    <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/misparSwitch"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:checked="true"
-        android:text="@string/mispar_gadol"
-        app:layout_constraintStart_toStartOf="@+id/editTextSearch"
-        app:layout_constraintTop_toBottomOf="@+id/editTextSearch" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingBottom="100dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="@+id/editTextSearch"
-        app:layout_constraintStart_toStartOf="@+id/editTextSearch"
-        app:layout_constraintTop_toBottomOf="@+id/misparSwitch"
-        app:layout_constraintVertical_bias="0.0" />
 
     <TextView
         android:id="@+id/gematriaValue"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text=""
-        app:layout_constraintBottom_toBottomOf="@+id/misparSwitch"
+        android:paddingBottom="5dp"
         app:layout_constraintEnd_toEndOf="@+id/editTextSearch"
-        app:layout_constraintTop_toTopOf="@+id/misparSwitch" />
+        app:layout_constraintTop_toBottomOf="@+id/editTextSearch" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:scrollbarStyle="outsideOverlay"
+        android:scrollbars="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/gematriaValue" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

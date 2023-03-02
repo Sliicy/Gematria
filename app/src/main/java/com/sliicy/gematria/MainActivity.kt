@@ -1,8 +1,10 @@
 package com.sliicy.gematria
 
+import android.app.Activity
 import android.app.AlertDialog
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -11,32 +13,53 @@ import android.os.LocaleList
 import android.text.Editable
 import android.text.TextWatcher
 import android.text.util.Linkify
+import android.view.Menu
+import android.view.MenuItem
+import android.view.View
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.SwitchCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView.SCROLL_STATE_DRAGGING
+import androidx.recyclerview.widget.RecyclerView.SCROLL_STATE_IDLE
 import java.io.BufferedReader
 import java.util.*
 
+
 class MainActivity : AppCompatActivity() {
-    private lateinit var editTextSearch: EditText
-    private lateinit var gematriaResult: TextView
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var misparSwitch: SwitchCompat
+
     private val data = ArrayList<PasukModel>()
     private val pesukim = mutableListOf<Pair<Long, String>>()
     private val adapter: PasukAdapter = PasukAdapter(data)
+
+    private lateinit var editTextSearch: EditText
+    private lateinit var gematriaResult: TextView
+    private lateinit var recyclerView: RecyclerView
+
+    private var misparGadolChecked: Boolean = false
+    private var showWordsChecked: Boolean = true
+    private var showDaveningChecked: Boolean = true
+
+    private lateinit var torah: List<String>
+    private lateinit var neviim: List<String>
+    private lateinit var kesuvim: List<String>
+    private lateinit var allWords: List<String>
+    private lateinit var rabbis: List<String>
+    private lateinit var hebrewNames: List<String>
+    private lateinit var commonWords: List<String>
+    private lateinit var poskim: List<String>
+    private lateinit var poskimSefarim: List<String>
+    private lateinit var davening: List<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         editTextSearch = findViewById(R.id.editTextSearch)
         recyclerView = findViewById(R.id.recyclerView)
-        misparSwitch = findViewById(R.id.misparSwitch)
         gematriaResult = findViewById(R.id.gematriaValue)
 
         val firstRun = getSharedPreferences("PREFERENCE", MODE_PRIVATE).getBoolean("firstRun", true)
@@ -57,8 +80,20 @@ class MainActivity : AppCompatActivity() {
             alertBuilder.setMessage(R.string.dialog_message)
             val alert: AlertDialog = alertBuilder.create()
             alert.show()
-            Linkify.addLinks((alert.findViewById(android.R.id.message) as TextView), Linkify.ALL)
+            Linkify.addLinks((alert.findViewById(android.R.id.message) as TextView), Linkify.WEB_URLS)
         }
+
+        // Initialize all Pesukim:
+        torah = this.resources.openRawResource(R.raw.torah).bufferedReader().use(BufferedReader::readText).lines()
+        neviim = this.resources.openRawResource(R.raw.neviim).bufferedReader().use(BufferedReader::readText).lines()
+        kesuvim = this.resources.openRawResource(R.raw.kesuvim).bufferedReader().use(BufferedReader::readText).lines()
+        allWords = this.resources.openRawResource(R.raw.all_words).bufferedReader().use(BufferedReader::readText).lines()
+        rabbis = this.resources.openRawResource(R.raw.rabbis).bufferedReader().use(BufferedReader::readText).lines()
+        hebrewNames = this.resources.openRawResource(R.raw.hebrew_names).bufferedReader().use(BufferedReader::readText).lines()
+        commonWords = this.resources.openRawResource(R.raw.common_words).bufferedReader().use(BufferedReader::readText).lines()
+        poskim = this.resources.openRawResource(R.raw.poskim).bufferedReader().use(BufferedReader::readText).lines()
+        poskimSefarim = this.resources.openRawResource(R.raw.poskim_sefarim).bufferedReader().use(BufferedReader::readText).lines()
+        davening = this.resources.openRawResource(R.raw.davening).bufferedReader().use(BufferedReader::readText).lines()
 
         // Handle keyboard input:
         editTextSearch.addTextChangedListener(object : TextWatcher {
@@ -73,6 +108,7 @@ class MainActivity : AppCompatActivity() {
         editTextSearch.setOnEditorActionListener { v, actionId, event ->
             if(actionId == EditorInfo.IME_ACTION_SEARCH){
                 refreshResults()
+                hideKeyboard()
                 true
             } else {
                 false
@@ -80,17 +116,28 @@ class MainActivity : AppCompatActivity() {
         }
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        misparSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
-            refreshPesukim()
-            refreshResults()
-        }
         recyclerView.adapter = adapter
 
         adapter.onItemClick = {
-            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://sefaria.org/search?q=" + it.text))
+            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.sefaria.org/search?q=" + it.text))
             startActivity(browserIntent)
         }
         recyclerView.setOnLongClickListener { true }
+
+        recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                super.onScrollStateChanged(recyclerView, newState)
+                val hasStarted = newState == SCROLL_STATE_DRAGGING
+                val hasEnded = newState == SCROLL_STATE_IDLE
+                if (hasStarted && data.isNotEmpty()) {
+                    hideKeyboard()
+                }
+                if (!recyclerView.canScrollVertically(-1) && data.isNotEmpty() && hasEnded) {
+                    val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+                    imm.showSoftInput(editTextSearch, 0)
+                }
+            }
+        })
 
         adapter.onItemLongClick = {
             val clipboardManager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
@@ -108,20 +155,86 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu, menu)
+        val settings = getSharedPreferences("settings", 0)
+        val isCheckedMispar = settings.getBoolean("misparGadol", false)
+        val isCheckedShowWords = settings.getBoolean("showWords", true)
+        val isCheckedDavening = settings.getBoolean("showDavening", true)
+        menu.findItem(R.id.menu_mispar_gadol).isChecked = isCheckedMispar
+        menu.findItem(R.id.menu_show_words).isChecked = isCheckedShowWords
+        menu.findItem(R.id.menu_davening).isChecked = isCheckedDavening
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        item.isChecked = !item.isChecked
+        val settings = getSharedPreferences("settings", 0)
+        val editor = settings.edit()
+        when (item.itemId) {
+            R.id.menu_mispar_gadol -> {
+                misparGadolChecked = item.isChecked
+                editor.putBoolean("misparGadol", item.isChecked)
+            }
+            R.id.menu_show_words -> {
+                showWordsChecked = item.isChecked
+                editor.putBoolean("showWords", item.isChecked)
+            }
+            R.id.menu_davening -> {
+                showDaveningChecked = item.isChecked
+                editor.putBoolean("showDavening", item.isChecked)
+            }
+        }
+        editor.apply()
+        refreshPesukim()
+        refreshResults()
+        return super.onOptionsItemSelected(item)
+    }
+
+    private fun Activity.hideKeyboard() {
+        hideKeyboard(currentFocus ?: View(this))
+    }
+
+    private fun Context.hideKeyboard(view: View) {
+        val inputMethodManager = getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
+        inputMethodManager.hideSoftInputFromWindow(view.windowToken, 0)
+    }
+
     private fun refreshPesukim() {
         pesukim.clear()
-        val torah: List<String> = this.resources.openRawResource(R.raw.torah).bufferedReader().use(BufferedReader::readText).lines()
-        val neviim: List<String> = this.resources.openRawResource(R.raw.neviim).bufferedReader().use(BufferedReader::readText).lines()
-        val kesuvim: List<String> = this.resources.openRawResource(R.raw.kesuvim).bufferedReader().use(BufferedReader::readText).lines()
-
         for (pasuk in torah) {
-            pesukim.add(Pair(getGematria(pasuk, misparSwitch.isChecked), pasuk))
+            pesukim.add(Pair(getGematria(pasuk, misparGadolChecked), pasuk))
         }
         for (pasuk in neviim) {
-            pesukim.add(Pair(getGematria(pasuk, misparSwitch.isChecked), pasuk))
+            pesukim.add(Pair(getGematria(pasuk, misparGadolChecked), pasuk))
         }
         for (pasuk in kesuvim) {
-            pesukim.add(Pair(getGematria(pasuk, misparSwitch.isChecked), pasuk))
+            pesukim.add(Pair(getGematria(pasuk, misparGadolChecked), pasuk))
+        }
+        if (showWordsChecked) {
+            for (word in allWords) {
+                pesukim.add(Pair(getGematria(word, misparGadolChecked), word))
+            }
+        }
+        for (name in rabbis) {
+            pesukim.add(Pair(getGematria(name, misparGadolChecked), name))
+        }
+        for (name in hebrewNames) {
+            pesukim.add(Pair(getGematria(name, misparGadolChecked), name))
+        }
+        for (word in commonWords) {
+            pesukim.add(Pair(getGematria(word, misparGadolChecked), word))
+        }
+        for (name in poskim) {
+            pesukim.add(Pair(getGematria(name, misparGadolChecked), name))
+        }
+        for (sefer in poskimSefarim) {
+            pesukim.add(Pair(getGematria(sefer, misparGadolChecked), sefer))
+        }
+        if (showDaveningChecked) {
+            for (line in davening) {
+                pesukim.add(Pair(getGematria(line, misparGadolChecked), line))
+            }
         }
     }
 
@@ -131,15 +244,10 @@ class MainActivity : AppCompatActivity() {
             data.add(PasukModel(word))
         }
         recyclerView.adapter = adapter
-        if (editTextSearch.text.matches(Regex("^\\d+$"))) {
+        if (!editTextSearch.text.matches(Regex("^\\d+$"))) {
             gematriaResult.text = buildString {
                 append("= ")
-                append(editTextSearch.text.toString().toLong())
-            }
-        } else {
-            gematriaResult.text = buildString {
-                append("= ")
-                append(getGematria(editTextSearch.text.toString(), misparSwitch.isChecked))
+                append(getGematria(editTextSearch.text.toString(), misparGadolChecked))
             }
         }
         if (gematriaResult.text == "= 0") {
@@ -153,7 +261,7 @@ class MainActivity : AppCompatActivity() {
         if (input.isNotEmpty() && input.matches(Regex("^\\d+$"))) {
             sanitizedInput = input.toLong()
         } else if (input.isNotEmpty()) {
-            sanitizedInput = getGematria(input, misparSwitch.isChecked)
+            sanitizedInput = getGematria(input, misparGadolChecked)
         }
         for (pasuk in pesukim) {
             if (sanitizedInput == pasuk.first) {
