@@ -62,26 +62,24 @@ class MainActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.recyclerView)
         gematriaResult = findViewById(R.id.gematriaValue)
 
-        val firstRun = getSharedPreferences("PREFERENCE", MODE_PRIVATE).getBoolean("firstRun", true)
-        if (firstRun) {
-
-            // Show alert:
-            val alertBuilder = AlertDialog.Builder(this)
-            alertBuilder.setTitle(R.string.privacy_policy)
-            alertBuilder.setCancelable(false)
-            alertBuilder.setPositiveButton("OK") { dialog, id ->
-
-                // Save the state if user acknowledges privacy policy:
-                getSharedPreferences("PREFERENCE", MODE_PRIVATE)
-                    .edit()
-                    .putBoolean("firstRun", false)
-                    .apply()
-            }
-            alertBuilder.setMessage(R.string.dialog_message)
-            val alert: AlertDialog = alertBuilder.create()
-            alert.show()
-            Linkify.addLinks((alert.findViewById(android.R.id.message) as TextView), Linkify.WEB_URLS)
-        }
+        //val firstRun = getSharedPreferences("PREFERENCE", MODE_PRIVATE).getBoolean("firstRun", true)
+        //if (firstRun) {
+        //    // Show alert:
+        //    val alertBuilder = AlertDialog.Builder(this)
+        //    alertBuilder.setTitle(R.string.privacy_policy)
+        //    alertBuilder.setCancelable(false)
+        //    alertBuilder.setPositiveButton("OK") { dialog, id ->
+        //        // Save the state if user acknowledges privacy policy:
+        //        getSharedPreferences("PREFERENCE", MODE_PRIVATE)
+        //            .edit()
+        //            .putBoolean("firstRun", false)
+        //            .apply()
+        //    }
+        //    alertBuilder.setMessage(R.string.dialog_message)
+        //    val alert: AlertDialog = alertBuilder.create()
+        //    alert.show()
+        //    Linkify.addLinks((alert.findViewById(android.R.id.message) as TextView), Linkify.WEB_URLS)
+        //}
 
         // Initialize all Pesukim:
         torah = this.resources.openRawResource(R.raw.torah).bufferedReader().use(BufferedReader::readText).lines()
